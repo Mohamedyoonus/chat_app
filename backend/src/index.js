@@ -20,31 +20,41 @@ const __dirname = path.dirname(__filename);
 // Set PORT from env or default to 5000
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(express.json());
-app.use(cookieParser());
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    credentials: true,
-  })
-);
+// Connect to MongoDB before starting the server
+const startServer = async () => {
+  try {
+    await connectDB();
+    // Middleware
+    app.use(express.json());
+    app.use(cookieParser());
+    app.use(
+      cors({
+        origin: process.env.CORS_ORIGIN || "http://localhost:5173", // Default to local dev
+        credentials: true,
+      })
+    );
 
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/messages", messageRoutes);
+    // Routes
+    app.use("/api/auth", authRoutes);
+    app.use("/api/messages", messageRoutes);
 
-// Serve frontend in production
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+    // Serve frontend in production
+    if (process.env.NODE_ENV === "production") {
+      app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
-  });
-}
+      app.get("*", (req, res) => {
+        res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
+      });
+    }
 
-// Start server
-server.listen(PORT, () => {
-  console.log(`🚀 Server is running on PORT: ${PORT}`);
-  connectDB();
-});
+    // Start server
+    server.listen(PORT, () => {
+      console.log(`🚀 Server is running on PORT: ${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ Server failed to start:", error);
+    process.exit(1); // Exit if server fails to start
+  }
+};
+
+startServer();
